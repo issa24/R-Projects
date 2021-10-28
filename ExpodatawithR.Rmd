@@ -1,0 +1,301 @@
+---
+title: "Exploratory Data Analysis with R"
+author: "Issa Abdulkadir"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Abstract
+The purpose of this project is to perform exploratory data analyses on the data from the peer-to-peer personal loan service provider called Prosper. Since a borrower's financial health is based on how many loans the borrower carries and the borrower's ability to pay back those loans on time, Prosper uses a variety of criteria to approve personal loans- it ranges from credit score, income level, and debt-to-income ration, to name just a few. Prosper differs from the traditional lenders such as banks or other lending institutions. 
+
+The EDA encompasses mainly the branch of statistics called descriptive statistics - mean, mode, median, and standard deviation. This method is used to find the central tendency and the spread of our dataset.
+
+This project's EDA process is a stepping stone to learn from the historical data of personal loans. Analyzing various variables in the dataset and using statistical methods to glean insights from the dataset,can shade some light on how future borrowers can make better borrowing decisions.
+
+
+## Univariate Variables
+The functions below generate the univariate data descriptive statistics for exploring 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+personal_loans <- read.csv('prosperLoanData.csv.')
+class(personal_loans)
+str(personal_loans,6)
+summary(personal_loans,6)
+
+```
+The dataset contains 81 variables and 113,937 observations. This is a huge dataset!
+Let's start with the univariate data analyses
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data = personal_loans, aes(BorrowerRate)) +
+  geom_histogram(binwidth = .007) +
+  scale_x_continuous(breaks = seq(0.0,0.5, 0.1) )
+```
+
+What is the most common interest rate of borrowers?
+Most of the rates aggregate around 0.18 and 0.2.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(BorrowerAPR)) +
+  geom_histogram(binwidth = .008, aes(y = ..count..)) +
+  scale_x_continuous(breaks = seq(0.01,0.5123, 0.05) ) 
+  
+```
+
+Graphically, the BorrowerRate and BorrowerAPR plots appear identical.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(LoanStatus, fill = LoanStatus) ) +
+  geom_bar(stat = 'count') +
+  coord_flip() +
+  theme(legend.position = 'none')
+  
+  
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(x = ProsperRating..Alpha., fill = ProsperRating..Alpha.), na.omit(ProsperRating..Alpha.)) +
+  geom_bar(stat="count", binwidth = .01) +
+  theme(legend.position = 'none')
+  
+
+  
+  
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(ProsperRating..numeric., fill = ProsperRating..numeric.))+
+  geom_bar(stat = 'count', binwidth = 0.1, aes(colors = ProsperRating..Alpha.)) +
+  scale_x_continuous(breaks = seq(1,7,1))+
+  theme(legend.position = 'none')
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(Term)) +
+  geom_histogram(aes(fill =I('red')))+
+  scale_x_continuous(breaks = seq(0,60,12))
+  
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(IncomeRange)) +
+  geom_bar(stat = 'count', binwidth = 0.001, aes(fill= IncomeRange)) +
+  coord_flip()
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(personal_loans, aes(MonthlyLoanPayment)) +
+  geom_density() +
+  stat_density()
+  
+```
+
+
+
+## Bivariate Analysis
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(BorrowerRate, BorrowerAPR)) +
+  geom_point(color = '#F79422', alpha = 1/4) +
+  stat_smooth(method = 'lm') +
+  scale_x_continuous(lim = c(0, quantile(personal_loans$BorrowerRate, 0.99, na.rm = TRUE))) +
+  scale_y_continuous(lim = c(0, quantile(personal_loans$BorrowerAPR, 0.99, na.rm = TRUE))) 
+```
+
+### Is there a correlation between borrowerRate and borrowerAPR?
+From the plot the line that goes through the points seems to disect the data into nearly equal halves and most of the points are close to the line. This shows 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+boxplot(with(personal_loans,DebtToIncomeRatio~IncomeRange), notch=FALSE, col = c('grey',"gold","grey","grey","grey","grey","gold"), staplewex = 0.8) 
+
+
+```
+
+### Do the level of income and a debt a borrower has hamper a loan approval?
+Most borrowers that have income less than $25,000 tend to have a high debt-to-income ratio that's a red flag in their ability to qualify for Prosper loans.
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(CreditScoreRangeLower, LoanOriginalAmount)) +
+  geom_line()+ geom_point()
+
+```
+
+### Is it really true that a borrower must have a minimum of specified credit score to qualify for a loan?
+
+Majority of the borrowers have credit scores greater than 500 which is a big indicator that a borrower is financially responsible. There are some outliers that indicate that a borrower does not necessary have to meet specified criteria to be granted a loan. For example, from the graph a borrower or borrowers with zero scores were able to successfully received some loans.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fill <- "#4271AE"; line <- "#1F3552"
+ggplot(data = personal_loans, aes(BorrowerRate,CreditScoreRangeLower)) +
+  geom_line()+ geom_point(fill = fill, color = line, alpha = 0.7,outlier.colour = "#1F3552", outlier.shape = 20, size = 1 , position = 'dodge') +
+  geom_smooth()
+```
+
+When comparing the income of the borrowers' rate versus their credit scores, there is a trend that exhibits a higher credit score is associated with lower borrower rate and vice versa.
+
+
+## Multivariate Plots
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = CurrentCreditLines, y = OnTimeProsperPayments),
+       data = subset(personal_loans, !is.na(Occupation))) +
+  geom_line(aes(color = ProsperScore), stat = 'summary', fun = median, size = 2) 
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = InvestmentFromFriendsAmount, y = InvestmentFromFriendsCount),
+       data = subset(personal_loans, !is.na(IsBorrowerHomeowner))) +
+  geom_point(aes(color = Investors), stat = 'summary', fun = mean, size = 2) 
+```
+
+
+## Borrowers with Zero Delinquencies
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = CreditScoreRangeUpper, y = TradesNeverDelinquent..percentage.),
+       data = subset(personal_loans, !is.na(IsBorrowerHomeowner))) +
+    geom_point(aes(colour= IsBorrowerHomeowner, shape = IsBorrowerHomeowner), stat = 'summary', fun = mean, size = 2 ) + geom_smooth()
+```
+
+### Does owning a home indicate your are a more responsible borrower?
+Through visualizing the relationship between credit score and percentage of being never delinquent on any loans, shows that borrowers with homeownership are likely to be on top of their loans as their percentage of being never delinquent is way above 50.
+
+
+## Correlation of Credit Card Utilization
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(GGally) 
+ggpairs(personal_loans[,c("RevolvingCreditBalance","BankcardUtilization","AvailableBankcardCredit","CurrentCreditLines")])
+```
+
+## Are there any correlations among various variables?
+When plotting how borrowers use their credit cards, there is a weak correlation.
+
+## Monthly Payments By States
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(personal_loans, aes(MonthlyLoanPayment, LoanNumber)) +
+  geom_polygon(aes(fill = BorrowerState), size = 3)
+```
+
+## Are borrowers in different states pay more on their monthly payments?
+Apparently, most of the borrowers have payments that range from 0 to 1000 dollars while other borrowers have high monthly payments.
+  
+
+# Final Plots and Summary
+I found three plots below very compelling in determining how borrowers' are granted loans.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = personal_loans, aes(IncomeRange)) +
+  geom_bar(stat = 'count', binwidth = 0.001, aes(fill= IncomeRange)) +
+  coord_flip() +
+  labs(title = "The Income Range of the Borrowers",
+       caption = "Most of the borrowers' income is between $25,000 and $74,999\n",
+       x = "The Income Level of The Borrowers",
+       y = "The Number of the Borrowers")+
+  theme(
+  plot.title = element_text(hjust = 0.5),
+  plot.subtitle = element_text(hjust = 0.5),
+  plot.caption = element_text(hjust = 0, face = "italic")
+  )
+  
+```
+
+Most borrowers' income accumulate around $25,000 to 
+$74,999. This indicates that borrowers are likely to pay their loans back.
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(personal_loans, aes(MonthlyLoanPayment)) +
+  geom_density() +
+  stat_density() +
+  labs(x = " Monthly Loan Payments",
+       title = "Distribution of How Much All Borrowers Pay a Month") +
+  theme(
+  plot.title = element_text(hjust = 0.5),
+  plot.subtitle = element_text(hjust = 0.5)
+  )
+ 
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(personal_loans$MonthlyLoanPayment)
+```
+
+The monthly payments on the loans are mostly around $200 and with the maximum payment around
+$2000.  
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = CreditScoreRangeUpper, y = TradesNeverDelinquent..percentage.),
+       data = subset(personal_loans, !is.na(IsBorrowerHomeowner))) +
+    geom_point(aes(color= IsBorrowerHomeowner, shape = IsBorrowerHomeowner), stat = 'summary', fun = mean, size = 4 ) + geom_smooth() +
+  labs( x = "Upper Credit Scores\n",
+        y = "Never Delinquent Loans(%)",
+        title = " The Benefit of Homeownership Towards Granting Loans",
+        caption = 'Homeownership reflects high credit score')+
+  theme(
+  plot.title = element_text(hjust = 0.5),
+  plot.subtitle = element_text(hjust = 0.5),
+  plot.caption = element_text(hjust = 0, face = "italic")
+  )
+  
+  
+```
+
+Borrowers that own homes have better credit scores and therefore less chances of being delinquent on their loans.
+
+## Reflection
+
+### Problems Encountered
+
+Even though the dataset is well compiled with a few errors here and there, the missing values posed a very challenging problem in deciding how to relate various variable in graphical ways. Also, my assumption of thinking that certain values will fall within expected range was proven wrong as I came across some surprising trends in how loans are granted.
+
+Another problem that made me frustrated is my lack of understandinng  in how to plot a map using the borrowers states. I tried everything from using borrowers' monthly loan payments and other variables in constructing a visual map of which states pay more monthly payments on the loans.
+
+## Conclusion
+Determing how to grant a loan is a very interesting and multiple-factor process. When a prospective borrower seeks a loan from a peer-to-peer lender, sometimes not all hopes are lost when the borrower's credit history is not sound. Unlike the traditional lending institutions, lenders like Prosper take into consideration a lot of things but no one factor is proven to be a deciding factor in granting a loan.
+
+Homeownership reflects the borrower's ability to maintain above average credit score and which in turn helps in speeding a borrowing process from the lender.
+
+
+
+## Sources
+Black, M. (n.d.). Peer-to-Peer lending: Best websites of March 2021. Retrieved March 22, 2021, from https://www.investopedia.com/articles/investing/092315/7-best-peertopeer-lending-websites.asp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
